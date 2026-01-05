@@ -8,7 +8,7 @@
 // STRUKTUR DATA UNIFIKASI
 // ===============================
 typedef struct struct_message {
-    int senderID;   // 3: Energy, 4: Agri, 9: Safet y
+    int senderID;   // 3: Energy, 4: Agri, 9: Safety
     int light;
     int soil;
     int danger;     // Untuk Kel 9 (Level) & Kel 3 (Overvoltage flag)
@@ -19,9 +19,6 @@ typedef struct struct_message {
 
 // Variabel penampung data per kelompok
 struct_message slave3, slave4, slave9;
-
-// ===== MAC ADDRESS SLAVE 3 =====
-uint8_t slave3Address[] = {0x00, 0x70, 0x07, 0xe5, 0xe9, 0x6c};
 
 // ===============================
 // KONFIGURASI WEB SERVER
@@ -121,7 +118,6 @@ const char index_html[] PROGMEM = R"rawliteral(
       <h3>Energy Optimization</h3>
       <div class="val">Input Voltage: <span id="s3_vin">0.00</span> V</div>
       <div id="energy_status" class="status-box">...</div>
-      <button onclick="resetS3()" style="margin-top:10px; padding:10px; cursor:pointer;">RESET LATCH</button>
     </div>
 
   </div>
@@ -148,9 +144,6 @@ const char index_html[] PROGMEM = R"rawliteral(
         else document.getElementById("energy_status").className = "status-box";
       });
     }, 1000);
-    function resetS3() {
-    fetch('/resetS3').then(response => alert("Reset Command Sent!"));
-    }
   </script>
 </body>
 </html>)rawliteral";
@@ -173,15 +166,6 @@ void setup() {
         return;
     }
     esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
-
-    esp_now_peer_info_t peerInfo;
-    memcpy(peerInfo.peer_addr, slave3Address, 6);
-    peerInfo.channel = 0;
-    peerInfo.encrypt = false;
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("Failed to add peer");
-        return;
-    }
 
     // 3. Web Server Endpoints
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -206,15 +190,6 @@ void setup() {
         String response;
         serializeJson(json, response);
         request->send(200, "application/json", response);
-    });
-
-    server.on("/resetS3", HTTP_GET, [](AsyncWebServerRequest *request){
-        struct_message msg;
-        msg.senderID = 10; // ID Master
-        msg.danger = -1;   // KODE KHUSUS: -1 berarti RESET LATCH
-        
-        esp_now_send(slave3Address, (uint8_t *) &msg, sizeof(msg));
-        request->send(200, "text/plain", "Reset Sent");
     });
 
     server.begin();
