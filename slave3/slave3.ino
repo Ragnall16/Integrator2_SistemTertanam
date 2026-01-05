@@ -379,7 +379,7 @@ void setup() {
     digitalWrite(RELAY_PIN, HIGH);   // Relay ON initially
     digitalWrite(BUZZER_PIN, LOW);   // Buzzer OFF
 
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);
     if (esp_now_init() != ESP_OK) {
         Serial.println("Error initializing ESP-NOW");
         return;
@@ -413,6 +413,7 @@ void setup() {
     xTaskCreate(TaskAlarm,   "Alarm",   4096, NULL, 2, NULL);   // Priority 2
     xTaskCreate(TaskTelemetry,"Serial", 2048, NULL, 1, NULL);   // Priority 1
     xTaskCreate(TaskWeb,     "Web",     4096, NULL, 1, NULL);   // Priority 1
+    xTaskCreate(TaskCommunication, "Comm", 2048, NULL, 1, NULL);
 }
 
 void loop() {
