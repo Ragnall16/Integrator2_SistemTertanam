@@ -104,6 +104,7 @@ void TaskAlarm(void *pvParameters) {
         if (isAlert) {
             playSong(telolet_melody, telolet_rhythm, sizeof(telolet_melody) / sizeof(int));
         } else {
+            ledcWriteTone(BUZZER_PIN, 0); // Matikan buzzer jika tidak alert
             vTaskDelay(pdMS_TO_TICKS(500));
         }
     }
@@ -141,6 +142,20 @@ void TaskTelemetry(void *pvParameters) {
     }
 }
 
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+    struct_message recvMsg;
+    memcpy(&recvMsg, incomingData, sizeof(recvMsg));
+
+    // Jika pengirim adalah Master (ID 10) dan instruksinya adalah Reset (-1)
+    if (recvMsg.senderID == 10 && recvMsg.danger == -1) {
+        xSemaphoreTake(xMutex, portMAX_DELAY);
+        overVoltageDetected = false;    // Clear the latch
+        digitalWrite(RELAY_PIN, HIGH); // Nyalakan kembali relay
+        xSemaphoreGive(xMutex);
+        Serial.println("SYSTEM RESET BY MASTER DASHBOARD");
+    }
+}
+
 // ===============================
 // Setup & Main Loop
 // ===============================
@@ -160,6 +175,8 @@ void setup() {
         Serial.println("Error initializing ESP-NOW");
         return;
     }
+
+    esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 
     memcpy(peerInfo.peer_addr, masterAddress, 6);
     peerInfo.channel = 0;  
