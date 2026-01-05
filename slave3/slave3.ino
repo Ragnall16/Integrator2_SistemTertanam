@@ -66,6 +66,16 @@ void playNote(int freq, int duration) {
 
 void playSong(int *melody, int *rhythm, int length) {
     for (int i = 0; i < length; i++) {
+        bool shouldStop = false;
+        xSemaphoreTake(xMutex, portMAX_DELAY);
+        if (!overVoltageDetected) shouldStop = true;
+        xSemaphoreGive(xMutex);
+        
+        if (shouldStop) {
+            ledcWriteTone(BUZZER_PIN, 0); // Matikan buzzer seketika
+            break; // Keluar dari loop lagu
+        }
+
         playNote(melody[i], rhythm[i] * beatlength);
     }
 }

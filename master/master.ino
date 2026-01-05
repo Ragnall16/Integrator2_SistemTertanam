@@ -21,7 +21,7 @@ typedef struct struct_message {
 struct_message slave3, slave4, slave9;
 
 // ===== MAC ADDRESS SLAVE 3 =====
-uint8_t slave3Address[] = {0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX};
+uint8_t slave3Address[] = {0x00, 0x70, 0x07, 0xe5, 0xe9, 0x6c};
 
 // ===============================
 // KONFIGURASI WEB SERVER
@@ -178,7 +178,10 @@ void setup() {
     memcpy(peerInfo.peer_addr, slave3Address, 6);
     peerInfo.channel = 0;
     peerInfo.encrypt = false;
-    esp_now_add_peer(&peerInfo);
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Failed to add peer");
+        return;
+    }
 
     // 3. Web Server Endpoints
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
